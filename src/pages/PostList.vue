@@ -1,40 +1,33 @@
 <template>
-  <div>
-
+  <div id="blog-box-container">
 <!--
-Bruno testar ett q-card
 
-testa att använda flexbox för att får responsiv placering av bilderna
+
 -->
-    <q-card class="blogg-mini-card">
-      <q-img
-        src="https://cdn.quasar.dev/img/parallax2.jpg"
-        basic
-      >
-        <div class="absolute-bottom text-h6">
-          Title
-        </div>
-      </q-img>
-
-      <q-card-section>
-        Brödtext
-      </q-card-section>
-    </q-card>
-
-    <q-card class="blogg-mini-card" v-for="post in postResponse" :key="post.id"><!-- <Java script loop> -->
-      <q-img class="bloggominibild" v-if="post._embedded['wp:featuredmedia']"
-        :src="post._embedded['wp:featuredmedia'][0].source_url"
-        basic
-      > </q-img>
-      <h4> <router-link :to="'/post/' + post.id"> {{post.title.rendered}} </router-link></h4>
-      <div v-html="post.excerpt.rendered"></div>
-      <!-- <div v-html="post.content.rendered"></div> -->
-    </q-card>
+    <template v-for="(post, index) in postResponse">
+      <q-card class="blogg-mini-card" v-bind:key="post.id">
+        <router-link :to="'/post/' + post.id" ><!-- <Java script loop> -->
+        
+          <q-img class="bloggminibild" v-if="post._embedded['wp:featuredmedia']"
+            :src="post._embedded['wp:featuredmedia'][0].source_url"
+            basic>
+            <div class="absolute-bottom text-h6">
+              <!-- {{ post.title.rendered }} -->
+              <span v-html="post.title.rendered">  </span><!--Möjligen en säkerhetsrisk med v-html då man kan få den att läsa ett script-->
+            </div>
+          </q-img>
+        
+          <q-card-section class="blog-abstract" v-html="condensedAbstracts[index]"></q-card-section> <!--Möjligen en säkerhetsrisk med v-html då man kan få den att läsa ett script-->
+          <!-- <div v-html="post.content.rendered"></div> -->
+        </router-link>
+      </q-card>
+    </template>
 
   </div>
 </template>
 
 <script>
+import {getPosts,getCategories} from 'src/JS/wordpress-api' //Här kan vi importera från vår .js fil
 export default {
   name: 'PostList',
   data: function() {
@@ -42,26 +35,23 @@ export default {
       postResponse: [],
     }
   },
-  mounted () {
-    console.log("gunnar är bäst");
-
-    let mittObject = {
-      'value1': 123,
-      'value2': 456,
-      'wp:recive': {
-        cooltext: "text"
-        }
+  computed: {
+    condensedAbstracts () {
+      return this.postResponse.map(post => { //.map funktion som går igenom array
+        let abstract = post.excerpt.rendered;
+        // abstract = abstract.substr(0, 100);// Antal tecken
+        
+         abstract= abstract.split(" ").splice(0,15).join(" ");
+         abstract += '...'; //avslutas med ...
+         return abstract;
+      })
     }
-
-    mittObject['wp:recive'].cooltext
-
-
-    this.$axios.get('https://wepopop.com/wp-json/wp/v2/posts?_embed') //Här här hämtas alla poster, verkar bara hämta 10st//
-      .then(response => {
-        console.log(response.data);//Här logas alla data console.log(response); ger allt .data ger bara det i data//
-        this.postResponse = response.data;
-        })
-      .catch(err => console.error(err));
+  },
+  async created() {
+    console.log("gunnar är bäst");
+    this.postResponse = await getPosts('1'); //Hämtar posts när de kommer kallas för promise data när den kommer
+    let categories = await getCategories()
+  console.log(categories);
   }
 };
 </script>
@@ -72,13 +62,47 @@ export default {
 }
 
 .blogg-mini-card{
-  max-width: 25rem;
+  //height:100%;
+  //max-width: 25rem;
   
-  .bloggominibild{
-    max-height: 20rem;
+  
+  .bloggminibild{
+    height: 20rem;
+    border-radius: 0.15rem 0.15rem 0 0; //rundade hörn övre hörnen på bilden
   }
   
 }
+
+#blog-box-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  grid-gap: 1rem;
+  margin: 2rem;
+  align-items: stretch;
+}
+.blog-abstract {
+  color:black;
+  text-decoration: none;
+
+  //  overflow: hidden;
+  //  text-overflow: ellipsis;
+  //  display: -webkit-box;
+  //  -webkit-line-clamp: 3,5; /* number of lines to show */
+  //  -webkit-box-orient: vertical;
+  
+}
+
+a {
+  text-decoration: none;
+}
+
+// .box {
+//   background-color: #20262e;
+//   color: #fff;
+//   border-radius: 3px;
+//   padding: 20px;
+//   font-size: 14px;
+// }
 
 </style>
 
